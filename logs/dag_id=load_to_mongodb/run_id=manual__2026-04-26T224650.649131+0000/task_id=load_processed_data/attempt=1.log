@@ -1,0 +1,15 @@
+{"timestamp":"2026-04-26T22:46:52.798812Z","level":"info","event":"DAG bundles loaded: dags-folder, example_dags","logger":"airflow.dag_processing.bundles.manager.DagBundlesManager","filename":"manager.py","lineno":209}
+{"timestamp":"2026-04-26T22:46:52.800483Z","level":"info","event":"Filling up the DagBag from /opt/airflow/dags/load_to_mongodb.py","logger":"airflow.dag_processing.dagbag.BundleDagBag","filename":"dagbag.py","lineno":469}
+{"timestamp":"2026-04-26T22:46:52.866064Z","level":"warning","event":"The `airflow.operators.python.PythonOperator` attribute is deprecated. Please use `'airflow.providers.standard.operators.python.PythonOperator'`.","category":"UserWarning","filename":"/opt/airflow/dags/load_to_mongodb.py","lineno":2,"logger":"py.warnings"}
+{"timestamp":"2026-04-26T22:46:52.866230Z","level":"warning","event":"The `airflow.sensors.python.PythonSensor` attribute is deprecated. Please use `'airflow.providers.standard.sensors.python.PythonSensor'`.","category":"UserWarning","filename":"/opt/airflow/dags/load_to_mongodb.py","lineno":3,"logger":"py.warnings"}
+{"timestamp":"2026-04-26T22:46:52.866338Z","level":"warning","event":"The `airflow.utils.operator_helpers.determine_kwargs` attribute is deprecated. Please use `'airflow.sdk.bases.decorator.determine_kwargs'`.","category":"UserWarning","filename":"/home/airflow/.local/lib/python3.13/site-packages/airflow/providers/standard/sensors/python.py","lineno":24,"logger":"py.warnings"}
+{"timestamp":"2026-04-26T22:46:52.866414Z","level":"warning","event":"The `airflow.hooks.base.BaseHook` attribute is deprecated. Please use `'airflow.sdk.bases.hook.BaseHook'`.","category":"UserWarning","filename":"/opt/airflow/dags/load_to_mongodb.py","lineno":7,"logger":"py.warnings"}
+{"timestamp":"2026-04-26T22:46:52.886915Z","level":"info","event":"Task instance is in running state","logger":"task.stdout"}
+{"timestamp":"2026-04-26T22:46:52.887436Z","level":"info","event":" Previous state of the Task instance: TaskInstanceState.QUEUED","logger":"task.stdout"}
+{"timestamp":"2026-04-26T22:46:52.887671Z","level":"info","event":"Current task name:load_processed_data","logger":"task.stdout"}
+{"timestamp":"2026-04-26T22:46:52.887870Z","level":"info","event":"Dag name:load_to_mongodb","logger":"task.stdout"}
+{"timestamp":"2026-04-26T22:47:00.549530Z","level":"info","event":"Загружено 307057 записей в MongoDB","logger":"task.stdout"}
+{"timestamp":"2026-04-26T22:47:00.739393Z","level":"info","event":"Done. Returned value was: None","logger":"airflow.task.operators.airflow.providers.standard.operators.python.PythonOperator","filename":"python.py","lineno":229}
+{"timestamp":"2026-04-26T22:47:00.757424Z","level":"info","event":"Task instance in success state","logger":"task.stdout"}
+{"timestamp":"2026-04-26T22:47:00.757767Z","level":"info","event":" Previous state of the Task instance: TaskInstanceState.RUNNING","logger":"task.stdout"}
+{"timestamp":"2026-04-26T22:47:00.758043Z","level":"info","event":"Task operator:<Task(PythonOperator): load_processed_data>","logger":"task.stdout"}
