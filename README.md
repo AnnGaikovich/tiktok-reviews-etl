@@ -89,3 +89,5 @@ Run the three queries (copy and paste each one).
   { $project: { date: { $toDate: "$_id" }, avg_rating: 1, _id: 0 } },
   { $sort: { date: 1 } }
 ]
+
+![Screenshot of the DAGs](images/screenshot.png)
