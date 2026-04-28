@@ -1,9 +1,8 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.sensors.python import PythonSensor
+from airflow.providers.mongo.hooks.mongo import MongoHook
 import pandas as pd
-from pymongo import MongoClient
-from airflow.hooks.base import BaseHook
 import os
 
 # Import configuration
@@ -13,30 +12,25 @@ from config.config import (
 )
 
 def check_file_exists(**context):
-    """Check if the processed CSV file exists."""
     return os.path.exists(FINAL_PATH)
 
 def load_csv_to_mongodb(**context):
-    """Read processed CSV and load data into MongoDB."""
     # Read CSV
     df = pd.read_csv(FINAL_PATH)
     df[DATE_COLUMN] = pd.to_datetime(df[DATE_COLUMN])
     records = df.to_dict('records')
 
-    # Get MongoDB connection from Airflow connection
-    conn = BaseHook.get_connection(MONGODB_CONN_ID)
-    client = MongoClient(host=conn.host, port=conn.port)
-    db = client[MONGODB_DATABASE]
-    collection = db[MONGODB_COLLECTION]
+    # Use MongoHook to get collection
+    hook = MongoHook(mongo_conn_id=MONGODB_CONN_ID)
+    collection = hook.get_collection(MONGODB_COLLECTION, MONGODB_DATABASE)
 
     # Replace existing data (idempotent run)
     collection.delete_many({})
     if records:
         collection.insert_many(records)
     print(f"Loaded {len(records)} records into MongoDB collection '{MONGODB_COLLECTION}'")
-    client.close()
 
-# DAG 
+# DAG definition
 with DAG(
     dag_id='load_to_mongodb',
     default_args=default_args,
