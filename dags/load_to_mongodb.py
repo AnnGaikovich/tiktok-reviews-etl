@@ -3,7 +3,7 @@ from airflow.providers.mongo.hooks.mongo import MongoHook
 import pandas as pd
 import os
 
-from config.config import (
+from config import (
     FINAL_PATH, DATE_COLUMN, MONGODB_CONN_ID,
     MONGODB_DATABASE, MONGODB_COLLECTION, default_args
 )

@@ -1,12 +1,11 @@
 from airflow.decorators import dag, task, task_group
 from airflow.operators.bash import BashOperator
-from datetime import datetime
 import pandas as pd
 import re
 import os
 
 # Import configuration (used as defaults)
-from config.config import (
+from config import (
     FILE_PATH, TEMP_ORIGINAL, TEMP_FILLED, TEMP_SORTED, FINAL_PATH,
     DATE_COLUMN, default_args, FLAG_PATH
 )
