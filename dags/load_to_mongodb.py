@@ -1,44 +1,46 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.sensors.python import PythonSensor
-from datetime import datetime
 import pandas as pd
 from pymongo import MongoClient
 from airflow.hooks.base import BaseHook
 import os
 
-PROCESSED_CSV_PATH = '/opt/airflow/data/processed_tiktok.csv'
-DATE_COLUMN = 'at'      # должна совпадать с именем в первом DAG
-
-default_args = {
-    'owner': 'airflow',
-    'start_date': datetime(2024, 1, 1),
-}
+# Import configuration
+from config.config import (
+    FINAL_PATH, DATE_COLUMN, MONGODB_CONN_ID,
+    MONGODB_DATABASE, MONGODB_COLLECTION, default_args
+)
 
 def check_file_exists(**context):
-    return os.path.exists(PROCESSED_CSV_PATH)
+    """Check if the processed CSV file exists."""
+    return os.path.exists(FINAL_PATH)
 
 def load_csv_to_mongodb(**context):
-    df = pd.read_csv(PROCESSED_CSV_PATH)
+    """Read processed CSV and load data into MongoDB."""
+    # Read CSV
+    df = pd.read_csv(FINAL_PATH)
     df[DATE_COLUMN] = pd.to_datetime(df[DATE_COLUMN])
     records = df.to_dict('records')
 
-    # Получаем соединение, настроенное в Airflow UI
-    conn = BaseHook.get_connection('mongodb_default')
+    # Get MongoDB connection from Airflow connection
+    conn = BaseHook.get_connection(MONGODB_CONN_ID)
     client = MongoClient(host=conn.host, port=conn.port)
-    db = client[conn.schema]          # имя базы данных из Connection
-    collection = db['reviews']
+    db = client[MONGODB_DATABASE]
+    collection = db[MONGODB_COLLECTION]
 
-    collection.delete_many({})        # очищаем перед загрузкой
+    # Replace existing data (idempotent run)
+    collection.delete_many({})
     if records:
         collection.insert_many(records)
-    print(f"Загружено {len(records)} записей в MongoDB")
+    print(f"Loaded {len(records)} records into MongoDB collection '{MONGODB_COLLECTION}'")
     client.close()
 
+# DAG 
 with DAG(
     dag_id='load_to_mongodb',
     default_args=default_args,
-    schedule=None,          # больше не ждёт Dataset, а запускается вручную или по триггеру
+    schedule=None,
     catchup=False,
     tags=['tiktok', 'mongodb'],
 ) as dag:

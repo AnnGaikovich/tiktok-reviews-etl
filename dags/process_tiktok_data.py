@@ -3,26 +3,17 @@ from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.operators.bash import BashOperator
 from airflow.sensors.python import PythonSensor
 from airflow.utils.task_group import TaskGroup
-from datetime import datetime
 import pandas as pd
 import re
 import os
 
-# ---------- Константы ----------
-FILE_PATH = '/opt/airflow/data/tiktok_google_play_reviews.csv'
-TEMP_ORIGINAL = '/opt/airflow/data/temp_original.csv'
-TEMP_FILLED = '/opt/airflow/data/temp_filled.csv'
-TEMP_SORTED = '/opt/airflow/data/temp_sorted.csv'
-FINAL_PATH = '/opt/airflow/data/processed_tiktok.csv'
-DATE_COLUMN = 'at'          # название колонки с датой
+# Импорт конфигурации
+from config.config import (
+    FILE_PATH, TEMP_ORIGINAL, TEMP_FILLED, TEMP_SORTED, FINAL_PATH,
+    DATE_COLUMN, default_args, FLAG_PATH
+)
 
-default_args = {
-    'owner': 'airflow',
-    'start_date': datetime(2024, 1, 1),
-    'retries': 0,
-}
-
-# ---------- Функции для сенсора и ветвления ----------
+# ----- Функции -----
 def check_file_exists(**context):
     return os.path.exists(FILE_PATH)
 
@@ -38,7 +29,6 @@ def check_file_empty(**context):
         return 'log_empty_file'
     return 'process_data_group.read_csv'
 
-# ---------- Функции обработки ----------
 def read_csv(**context):
     df = pd.read_csv(FILE_PATH)
     df.to_csv(TEMP_ORIGINAL, index=False)
@@ -46,10 +36,8 @@ def read_csv(**context):
 
 def replace_null_values(**context):
     df = pd.read_csv(TEMP_ORIGINAL)
-    # Заменяем null на '-' во всех колонках, КРОМЕ колонки с датой
     cols_to_fill = [col for col in df.columns if col != DATE_COLUMN]
     df[cols_to_fill] = df[cols_to_fill].fillna('-')
-    # Удаляем строки, где дата отсутствует или равна прочерку (если замена затронула)
     df = df.dropna(subset=[DATE_COLUMN])
     df = df[df[DATE_COLUMN] != '-']
     df.to_csv(TEMP_FILLED, index=False)
@@ -57,7 +45,6 @@ def replace_null_values(**context):
 
 def sort_by_created_date(**context):
     df = pd.read_csv(TEMP_FILLED)
-    # Парсим дату, невалидные станут NaT
     df[DATE_COLUMN] = pd.to_datetime(df[DATE_COLUMN], errors='coerce')
     df = df.dropna(subset=[DATE_COLUMN])
     df = df.sort_values(DATE_COLUMN)
@@ -69,18 +56,16 @@ def clean_content_column(**context):
     def clean_text(text):
         if not isinstance(text, str):
             return text
-        # Оставляем буквы, цифры, пробелы и базовую пунктуацию
         cleaned = re.sub(r'[^\w\s\.\,\!\?\:\;\-\'\"\(\)]', '', text)
         return cleaned
     df['content'] = df['content'].apply(clean_text)
     df.to_csv(FINAL_PATH, index=False)
-    # Удаляем временные файлы
     for f in [TEMP_ORIGINAL, TEMP_FILLED, TEMP_SORTED]:
         if os.path.exists(f):
             os.remove(f)
     context['ti'].xcom_push(key='final_path', value=FINAL_PATH)
 
-# ---------- DAG ----------
+# ----- DAG -----
 with DAG(
     dag_id='process_tiktok_data',
     default_args=default_args,
@@ -105,7 +90,7 @@ with DAG(
 
     log_empty = BashOperator(
         task_id='log_empty_file',
-        bash_command='echo "Файл пуст. Обработка остановлена."',
+        bash_command='echo "File is empty. Processing stopped."',
     )
 
     with TaskGroup(group_id='process_data_group') as process_group:
@@ -129,7 +114,7 @@ with DAG(
 
     mark_dataset_ready = BashOperator(
         task_id='mark_dataset_ready',
-        bash_command='echo "Processed" > /opt/airflow/data/dataset_ready.flag',
+        bash_command=f'echo "Processed" > {FLAG_PATH}',
     )
 
     wait_for_file >> branch_task
