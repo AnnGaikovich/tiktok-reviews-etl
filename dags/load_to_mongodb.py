@@ -3,7 +3,6 @@ from airflow.providers.mongo.hooks.mongo import MongoHook
 import pandas as pd
 import os
 
-# Import configuration
 from config.config import (
     FINAL_PATH, DATE_COLUMN, MONGODB_CONN_ID,
     MONGODB_DATABASE, MONGODB_COLLECTION, default_args
@@ -15,18 +14,21 @@ from config.config import (
     schedule=None,
     catchup=False,
     tags=['tiktok', 'mongodb'],
+    params={
+        'input_file': FINAL_PATH,
+    }
 )
 def load_to_mongodb():
 
     @task.sensor(poke_interval=10, timeout=600, mode='poke')
-    def wait_for_file():
-        """Sensor that waits for the processed CSV file to exist."""
-        return os.path.exists(FINAL_PATH)
+    def wait_for_file(input_path: str) -> bool:
+        """Wait for the processed CSV file."""
+        return os.path.exists(input_path)
 
     @task
-    def load_processed_data():
-        """Read CSV and load into MongoDB using MongoHook."""
-        df = pd.read_csv(FINAL_PATH)
+    def load_processed_data(input_path: str) -> None:
+        """Load CSV into MongoDB."""
+        df = pd.read_csv(input_path)
         df[DATE_COLUMN] = pd.to_datetime(df[DATE_COLUMN])
         records = df.to_dict('records')
 
@@ -38,8 +40,7 @@ def load_to_mongodb():
             collection.insert_many(records)
         print(f"Loaded {len(records)} records into MongoDB collection '{MONGODB_COLLECTION}'")
 
-    # Dependencies
-    wait_for_file() >> load_processed_data()
+    input_path = '{{ params.input_file }}'
+    wait_for_file(input_path) >> load_processed_data(input_path)
 
-# Instantiate the DAG
 dag = load_to_mongodb()
